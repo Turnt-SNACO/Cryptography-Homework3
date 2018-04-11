@@ -9,18 +9,11 @@ public class SSS {
     public SSS(int nShares) {
         this.nShares = nShares;
         coef = new int[nShares-1];
-        coef[0] = 4;//(int)(Math.random()*250);
-        coef[1] = 9;//(int)(Math.random()*250);
-        System.out.println("a0: "+coef[0]+"\na1: "+coef[1]);
-        //68, 229 -> 1,4,10
-        //98, 137 -> 1,4,10
-        //186, 44 -> 1,4,10
-        //86, 145 -> 1,4,10
+        for (int c = 0; c < nShares-1; c++)
+            coef[c] = (int)(Math.random()*249)+1;
         x = new double[nShares];
-        x[0] = 1;
-        x[1] = 4;
-        x[2] = 10;
-
+        for (int d = 0; d < nShares; d++)
+            x[d] = (int)(Math.random()*249)+1;
     }
     public byte[][] encryptBytes(byte[] bytes){
         int data[] = new int[bytes.length];
@@ -58,10 +51,14 @@ public class SSS {
         }
         return out;
     }
+
+    /**
+     * Get back secret using LaGrange Interpolation
+     * @param shares - array of shares for byte/int
+     * @return int - secret
+     */
     int reconstructData(int[] shares){
-        int out = 0;
         long sum = 0;
-        long gcd = getGCD(den());
         long dens[] = new long[nShares];
         long terms[] = new long[nShares];
         long den = 1;
@@ -75,39 +72,22 @@ public class SSS {
             }
             dens[i] = den;
             terms[i] = term;
-            den /= gcd;
-            term = term / den;
-            sum += term;
             den = 1;
         }
-        long lcm = 0;
-        boolean allGood = true;
-        for (int q = 0; q < terms.length; q++){
-            if (terms[q] % (dens[q] / gcd) != 0){
-                lcm = getLcm(dens);
-                allGood = false;
-            }
+        long lcm = getLcm(dens);//0;
+        for (int z = 0; z < terms.length; z++) {
+            long fac = lcm / dens[z];
+            terms[z] *= fac;
+            dens[z] *= fac;
         }
-        if (!allGood) {
-            for (int z = 0; z < terms.length; z++) {
-                long fac = lcm / dens[z];
-                terms[z] *= fac;
-                dens[z] *= fac;
-            }
-            int inv = getInverse((int)lcm);
-            sum = sum(terms);
-            sum *= inv;
-            sum %= mod;
-            return (int)sum;
-        }
-        int inv = getInverse((int)gcd);
+        int inv = getInverse((int)lcm);
+        sum = sum(terms);
         sum *= inv;
         sum %= mod;
-        out = (int)sum;
-        if (out < 0){
-            out += mod;
+        if (sum < 0){
+            sum += mod;
         }
-        return out;
+        return (int)sum;
     }
     private long sum(long[] nums){
         long sum = 0;
@@ -140,7 +120,6 @@ public class SSS {
      * @return int - y value of share
      */
     int encryptByte(int b, double x){
-//        System.out.println("byte: "+b);
         int t = b&0xFF;
         for (int i = 0; i < nShares-1; i++){
             t += (coef[i] * (Math.pow(x,(i+1))));
