@@ -13,9 +13,11 @@ public class Main {
         m.man(args);
     }
     public void man(String [] args) {
-        int nShares = 5;
+        int nShares = 3;
         SSS s = new SSS(nShares);
-        URL inputURL = getClass().getResource("/res/Art.jpg");
+        long t1 = System.currentTimeMillis();
+        long t2 = 0;
+        URL inputURL = getClass().getResource("/res/small.jpg");
         BufferedImage[] outImage = new BufferedImage[nShares];
         try {
             BufferedImage image = ImageIO.read(inputURL);
@@ -27,7 +29,7 @@ public class Main {
                 outImage[i].setData(Raster.createRaster(outImage[i].getSampleModel(), new DataBufferByte(encrypted[i], encrypted[i].length), new Point()));
                 ImageIO.write(outImage[i], "jpg", new File("/home/james/Pictures/small"+i+".bmp"));
             }
-
+            t2 = System.currentTimeMillis();
 
             byte[][]ePixels = new byte[nShares][pixels.length];
             for (int i = 0; i < nShares; i++){
@@ -41,20 +43,21 @@ public class Main {
         } catch (IOException e) {
             System.out.println("Error with image path!");
         }
+        long t3 = System.currentTimeMillis();
+        System.out.println("Shares made in "+(t2-t1)+"ms.");
+        System.out.println("Reconstruction completed in "+(t3-t2)+"ms.");
+        System.out.println("Task completed in "+(t3-t1)+"ms.");
 
-
-//        int test = 128;
-//        System.out.println("Secret: "+test);
-//        System.out.println("-----");
-//        int [] S = new int[3];
-//        S[0] = s.encryptByte(test, s.x[0]);
-//        S[1] = s.encryptByte(test, s.x[1]);
-//        S[2] = s.encryptByte(test, s.x[2]);
-//        System.out.println("Share: ("+1+","+S[0]+")");
-//        System.out.println("Share: ("+4+","+S[1]+")");
-//        System.out.println("Share: ("+10+","+S[2]+")");
-//        int r = s.reconstructData(S);
-//        System.out.println("recon: "+r);
+        int test = 128;
+        System.out.println("Secret: "+test);
+        System.out.println("-----");
+        int [] S = new int[nShares];
+        for (int i = 0; i < nShares; i++) {
+            S[i] = (int)s.encryptByte(test, s.x[i]);
+            System.out.println("Share: (" + s.x[i] + "," + S[i] + ")");
+        }
+        int r = s.reconstructData(S);
+        System.out.println("recon: "+r);
 
 
     }

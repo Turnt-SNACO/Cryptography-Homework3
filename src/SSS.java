@@ -141,7 +141,7 @@ public class SSS {
     private int getInverse(int val){
         return (new BigInteger(""+ val).modInverse(new BigInteger(""+mod)).intValue());
     }
-    
+
     /**
      * finds GCD between two numbers
      * @param x - lesser number
