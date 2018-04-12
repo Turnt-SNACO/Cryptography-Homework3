@@ -5,8 +5,9 @@ public class SSS {
     private int nShares;
     private int coef[];
     double x[];
-    static final int mod = 251;
-    public SSS(int nShares) {
+    private static final int mod = 251;
+
+    SSS(int nShares) {
         this.nShares = nShares;
         coef = new int[nShares-1];
         for (int c = 0; c < nShares-1; c++)
@@ -15,6 +16,12 @@ public class SSS {
         for (int d = 0; d < nShares; d++)
             x[d] = (int)(Math.random()*249)+1;
     }
+
+    /**
+     * Makes shares of byte array
+     * @param bytes - data to be secured
+     * @return byte[][] x - share, y - value
+     */
     public byte[][] encryptBytes(byte[] bytes){
         int data[] = new int[bytes.length];
         for (int i = 0; i < bytes.length; i++){
@@ -29,17 +36,12 @@ public class SSS {
         }
         return out;
     }
-    public byte[] reconstructBytes(byte[][] bytes){
-        byte[] out = new byte[bytes[0].length];
-        for (int i = 0; i < bytes[0].length; i++){
-            int[] ibytes = new int[nShares];
-            for (int j = 0; j < nShares; j++){
-                ibytes[j] = bytes[j][i]&0xFF;
-            }
-            out[i] = (byte)reconstructData(ibytes);
-        }
-        return out;
-    }
+
+    /**
+     * Makes shares of integer array
+     * @param data - data to be secured
+     * @return int[][] x - share, y - value
+     */
     private int[][] encryptData(int[] data){
         int[][] out = new int[nShares][data.length];
         for (int byt = 0; byt < data.length; byt++) {
@@ -53,96 +55,93 @@ public class SSS {
     }
 
     /**
+     * Gets the modified value of an int fed into SSS
+     * @param t - secret
+     * @param x - x value of share
+     * @return int - y value of share
+     */
+    int encryptByte(int t, double x){
+        for (int i = 0; i < nShares-1; i++){
+            t += (coef[i] * (Math.pow(x,(i+1)))) % mod;
+        }
+        if (t==0) t = 1;
+        return (t%mod);
+    }
+
+    /**
+     * Reconstruct original data from shares
+     * @param bytes - x - share, y - value
+     * @return byte[] - recovered data
+     */
+    public byte[] reconstructBytes(byte[][] bytes){
+        byte[] out = new byte[bytes[0].length];
+        for (int i = 0; i < bytes[0].length; i++){
+            int[] ibytes = new int[nShares];
+            for (int j = 0; j < nShares; j++){
+                ibytes[j] = bytes[j][i]&0xFF;
+            }
+            out[i] = (byte)reconstructData(ibytes);
+        }
+        return out;
+    }
+
+    /**
      * Get back secret using LaGrange Interpolation
      * @param shares - array of shares for byte/int
      * @return int - secret
      */
     int reconstructData(int[] shares){
-        long sum = 0;
-        long dens[] = new long[nShares];
-        long terms[] = new long[nShares];
-        long den = 1;
+        int sum;
+        int dens[] = new int[nShares];
+        int terms[] = new int[nShares];
+        int den = 1;
         for (int i = 0; i < nShares; i++) {
-            long term = shares[i];
+            int term = shares[i];
             for (int j = 0; j < nShares; j++) {
                 if (i != j) {
-                    term *= (0 - x[j]);
-                    den *= ((x[i] - x[j]));
+                    term = (int) ((term * (0 - x[j])) % mod);
+                    den = (int) ((den * ((x[i] - x[j]))));
                 }
             }
             dens[i] = den;
             terms[i] = term;
             den = 1;
         }
-        long lcm = getLcm(dens);//0;
+        int lcm = getLcm(dens);
         for (int z = 0; z < terms.length; z++) {
-            long fac = lcm / dens[z];
-            terms[z] *= fac;
-            dens[z] *= fac;
+            int fac = lcm / dens[z];
+            terms[z] = (terms[z] * fac) % mod;
         }
-        int inv = getInverse((int)lcm);
-        sum = sum(terms);
-        sum *= inv;
-        sum %= mod;
+        int inv = getInverse(lcm);
+        sum = sum(terms) % mod;
+        sum = (sum * inv) % mod;
         if (sum < 0){
             sum += mod;
         }
-        return (int)sum;
+        return sum;
     }
-    private long sum(long[] nums){
-        long sum = 0;
-        for (long l : nums)
+
+    /**
+     * Quick method for summing an array of integers
+     * @param nums - array of ints to be summed
+     * @return int - sum
+     */
+    private int sum(int[] nums){
+        int sum = 0;
+        for (int l : nums)
             sum += l;
         return sum;
     }
+
+    /**
+     * Get modulare inverse
+     * @param val - int
+     * @return int - modular inverse
+     */
     private int getInverse(int val){
         return (new BigInteger(""+ val).modInverse(new BigInteger(""+mod)).intValue());
     }
-    private int[] den(){
-        int prod=1;
-        int array[] = new int[nShares];
-        for (int i = 0; i < nShares; i++){
-            for (int j = 0; j < nShares; j++){
-                if (j!=i){
-                   prod *= x[i] - x[j];
-                }
-            }
-            array[i] = prod;
-            prod = 1;
-        }
-        return array;
-    }
-
-    /**
-     * Gets the modified value of an int fed into SSS
-     * @param b - secret
-     * @param x - x value of share
-     * @return int - y value of share
-     */
-    int encryptByte(int b, double x){
-        int t = b&0xFF;
-        for (int i = 0; i < nShares-1; i++){
-            t += (coef[i] * (Math.pow(x,(i+1))));
-        }
-        return (t%mod);
-    }
-
-    /**
-     * Finds the gcd of n numbers
-     * @param array - int array of numbers
-     * @return int - gcd
-     */
-    private long getGCD(int[] array){
-        int[] denoms = new int[array.length];
-        System.arraycopy(array, 0, denoms, 0, array.length);
-        sort(denoms);
-        long result = denoms[0];
-        for (int i = 1; i < denoms.length; i ++) {
-            result = gcd(result, denoms[i]);
-        }
-        return result;
-    }
-
+    
     /**
      * finds GCD between two numbers
      * @param x - lesser number
@@ -157,15 +156,28 @@ public class SSS {
         }
         return x;
     }
-    private long getLcm(long[] nums){
-        long lcm = nums[0];
-        for (int l = 0; l < nums.length; l++)
-            lcm = lcm(lcm, Math.abs(nums[l]));
+
+    /**
+     * gets the lcm of an array of integers
+     * @param nums - int array
+     * @return int - lcm
+     */
+    private int getLcm(int[] nums){
+        int lcm = Math.abs(nums[0]);
+        for (int num : nums) lcm = (int) lcm(lcm, Math.abs(num));
         return lcm;
     }
+
+    /**
+     * get lcm of two integers
+     * @param x - int
+     * @param y - int
+     * @return int - lcm
+     */
     private long lcm(long x, long y){
         return x *(y / gcd(x,y));
     }
+
     /**
      * sorts integer with insertion sort
      * @param array - to be sorted
