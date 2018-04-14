@@ -3,18 +3,33 @@ import java.math.BigInteger;
 
 public class SSS {
     private int nShares;
+    int k = 5;
     private int coef[];
     double x[];
     private static final int mod = 251;
 
     SSS(int nShares) {
+        int shift; int mult;
+        switch (nShares){
+            case 4:  shift = 100; mult = 148; break;
+            case 5: shift = 225; mult = 23; break;
+            default: shift = 1; mult = 249;
+        }
         this.nShares = nShares;
         coef = new int[nShares-1];
-        for (int c = 0; c < nShares-1; c++)
-            coef[c] = (int)(Math.random()*249)+1;
-        x = new double[nShares];
-        for (int d = 0; d < nShares; d++)
-            x[d] = (int)(Math.random()*249)+1;
+        for (int c = 0; c < nShares-1; c++) {
+            coef[c] = (int) (Math.random() * 249) + 1;
+        }
+        x = new double[5];
+        for (int d = 0; d < 5; d++) {
+            x[d] = (int) (Math.random() * mult) + shift;
+            for (int e = 0; e < d; e++){
+                if (x[d] == x[e]) {
+                    d--;
+                    break;
+                }
+            }
+        }
     }
 
     /**
@@ -27,9 +42,10 @@ public class SSS {
         for (int i = 0; i < bytes.length; i++){
             data[i] = bytes[i]&0xFF;
         }
-        byte[][] out = new byte[nShares][bytes.length];
+        byte[][] out = new byte[k][bytes.length];
         int[][] e = encryptData(data);
-        for (int i = 0; i < nShares; i++){
+        for (int i = 0; i < k; i++){
+            System.out.print(".");
             for (int j = 0; j < bytes.length; j ++){
                 out[i][j] = (byte) e[i][j];
             }
@@ -43,12 +59,12 @@ public class SSS {
      * @return int[][] x - share, y - value
      */
     private int[][] encryptData(int[] data){
-        int[][] out = new int[nShares][data.length];
+        int[][] out = new int[k][data.length];
         for (int byt = 0; byt < data.length; byt++) {
-            for (int share = 0; share < nShares; share++) {
+            for (int share = 0; share < k; share++) {
                 if ((data[byt]&0xFF)>250)
                     data[byt] = 250;
-                out[share][byt] = encryptByte(data[byt], x[share]);
+                out[share][byt] = encryptInt(data[byt], x[share]);
             }
         }
         return out;
@@ -60,11 +76,10 @@ public class SSS {
      * @param x - x value of share
      * @return int - y value of share
      */
-    int encryptByte(int t, double x){
+    int encryptInt(int t, double x){
         for (int i = 0; i < nShares-1; i++){
             t += (coef[i] * (Math.pow(x,(i+1)))) % mod;
         }
-        if (t==0) t = 1;
         return (t%mod);
     }
 
@@ -100,7 +115,7 @@ public class SSS {
             for (int j = 0; j < nShares; j++) {
                 if (i != j) {
                     term = (int) ((term * (0 - x[j])) % mod);
-                    den = (int) ((den * ((x[i] - x[j]))));
+                    den = (int) (den * ((x[i] - x[j])));
                 }
             }
             dens[i] = den;
@@ -108,6 +123,7 @@ public class SSS {
             den = 1;
         }
         int lcm = getLcm(dens);
+
         for (int z = 0; z < terms.length; z++) {
             int fac = lcm / dens[z];
             terms[z] = (terms[z] * fac) % mod;
