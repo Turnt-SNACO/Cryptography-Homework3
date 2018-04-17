@@ -4,7 +4,7 @@ import java.math.BigInteger;
 public class SSS {
     private int nShares;
     int k = 5;
-    private int coef[];
+    private int coef[][];
     double x[];
     private static final int mod = 251;
 
@@ -16,10 +16,6 @@ public class SSS {
             default: shift = 1; mult = 249;
         }
         this.nShares = nShares;
-        coef = new int[nShares-1];
-        for (int c = 0; c < nShares-1; c++) {
-            coef[c] = (int) (Math.random() * 249) + 1;
-        }
         x = new double[5];
         for (int d = 0; d < 5; d++) {
             x[d] = (int) (Math.random() * mult) + shift;
@@ -52,7 +48,14 @@ public class SSS {
         }
         return out;
     }
-
+    void generateCoefficientMatrix(int dataLength){
+        coef = new int[dataLength][nShares-1];
+        for (int i = 0; i < dataLength; i++) {
+            for (int c = 0; c < nShares - 1; c++) {
+                coef[i][c] = (int) (Math.random() * 249) + 1;
+            }
+        }
+    }
     /**
      * Makes shares of integer array
      * @param data - data to be secured
@@ -61,10 +64,11 @@ public class SSS {
     private int[][] encryptData(int[] data){
         int[][] out = new int[k][data.length];
         for (int byt = 0; byt < data.length; byt++) {
+
             for (int share = 0; share < k; share++) {
                 if ((data[byt]&0xFF)>250)
                     data[byt] = 250;
-                out[share][byt] = encryptInt(data[byt], x[share]);
+                out[share][byt] = encryptInt(data[byt], x[share], byt);
             }
         }
         return out;
@@ -76,9 +80,9 @@ public class SSS {
      * @param x - x value of share
      * @return int - y value of share
      */
-    int encryptInt(int t, double x){
-        for (int i = 0; i < nShares-1; i++){
-            t += (coef[i] * (Math.pow(x,(i+1)))) % mod;
+    int encryptInt(int t, double x, int index){
+        for (int i = 0; i < nShares-1; i++) {
+            t += (coef[index][i] * (Math.pow(x,(i+1)))) % mod;
         }
         return (t%mod);
     }

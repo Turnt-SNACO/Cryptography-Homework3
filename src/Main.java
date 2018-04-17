@@ -11,22 +11,24 @@ public class Main {
     private SSS s;
     public static void main(String [] args) {
         Main m = new Main();
-        m.man(args);
+        long t1 = System.currentTimeMillis();
+        m.man("small.jpg", "smalli.jpg");
+        long t2 = System.currentTimeMillis();
+        System.out.println("Time: "+(t2-t1)+" ms.");
+
     }
 
-
-
-    private void man(String [] args) {
+    private void man(String im, String subImage) {
         int nShares = 2;
         s = new SSS(nShares);
-        URL inputURL = getClass().getResource("/res/small.jpg");
+        URL inputURL = getClass().getResource("/res/"+im);
         BufferedImage[] outImage = new BufferedImage[5];
         try {
             System.out.println("Making shares of image...");
             /* MAKE SHARES */
             BufferedImage image = ImageIO.read(inputURL);
             byte[] pixels = ((DataBufferByte) image.getRaster().getDataBuffer()).getData();
-            System.out.println("Pixels[o] = "+(pixels[0]&0xFF));
+            s.generateCoefficientMatrix(pixels.length);
             byte[][] encrypted = s.encryptBytes(pixels);
 
             for (int i = 0; i < 5; i ++) {
@@ -47,7 +49,7 @@ public class Main {
             ImageIO.write(oi, "jpg", new File("out/reconstructed.jpg"));
 
             /* Making shares for subtract image */
-            BufferedImage subIm = ImageIO.read(getClass().getResource("/res/smalli.jpg"));
+            BufferedImage subIm = ImageIO.read(getClass().getResource("/res/"+subImage));
             byte[] subPix = (((DataBufferByte) subIm.getRaster().getDataBuffer()).getData());
             byte[][] subEPixels = s.encryptBytes(subPix);
             for (int x = 0; x < 5; x ++) {
@@ -58,7 +60,7 @@ public class Main {
 
             System.out.println("Performing image subtraction on shares..");
             /* IMAGE SUBTRACTION */
-            BufferedImage picture = ImageIO.read(getClass().getResource("/res/smalli.jpg"));
+            BufferedImage picture = ImageIO.read(getClass().getResource("/res/"+subImage));
 
             byte[] pic = ((DataBufferByte) picture.getRaster().getDataBuffer()).getData();
             byte[][] sub = new byte[5][pic.length];
@@ -70,7 +72,7 @@ public class Main {
             }
             for (int i = 0; i < 5; i++){
                 for (int j = 0; j < pic.length; j ++){
-                    sub[i][j] = (byte) ((subEPixels[i][j]&0xFF)- (ePixels[i][j])&0xFF);
+                    sub[i][j] = (byte) (((subEPixels[i][j]&0xFF)- (ePixels[i][j])&0xFF)%251);
                 }
             }
             for (int i = 0; i < pixels.length; i++){
@@ -81,9 +83,9 @@ public class Main {
             byte[] recon = s.reconstructBytes(sub);
             BufferedImage subo = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_3BYTE_BGR);
             subo.setData(Raster.createRaster(subo.getSampleModel(), new DataBufferByte(recon, recon.length), new Point()));
-            ImageIO.write(subo, "jpg", new File("out/psReconstructed.bmp"));
+            ImageIO.write(subo, "jpg", new File("out/psReconstructed.jpg"));
             subo.setData(Raster.createRaster(subo.getSampleModel(), new DataBufferByte(oSub, oSub.length), new Point()));
-            ImageIO.write(subo, "jpg", new File("out/subtracted.bmp"));
+            ImageIO.write(subo, "jpg", new File("out/subtracted.jpg"));
 
         } catch (IOException e) {
             System.out.println("Error with image path!");
