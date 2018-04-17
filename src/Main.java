@@ -1,5 +1,4 @@
 import javax.imageio.ImageIO;
-import javax.xml.crypto.Data;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
@@ -9,13 +8,17 @@ import java.io.IOException;
 import java.net.URL;
 
 public class Main {
+    private SSS s;
     public static void main(String [] args) {
         Main m = new Main();
         m.man(args);
     }
-    public void man(String [] args) {
+
+
+
+    private void man(String [] args) {
         int nShares = 2;
-        SSS s = new SSS(nShares);
+        s = new SSS(nShares);
         URL inputURL = getClass().getResource("/res/small.jpg");
         BufferedImage[] outImage = new BufferedImage[5];
         try {
@@ -86,19 +89,5 @@ public class Main {
             System.out.println("Error with image path!");
             e.printStackTrace();
         }
-
-//        int test = 2;
-//        System.out.println("Secret: "+test);
-//        System.out.println("-----");
-//        int [] S = new int[5];
-//        for (int i = 0; i < 5; i++) {
-//            S[i] = s.encryptInt(test, s.x[i]);
-//            System.out.println("Share: ("+i+","+S[i]+")");
-//        }
-//        int r = 0;
-//            r = s.reconstructData(S);
-//        System.out.println("recon: "+r);
-
-
     }
 }
